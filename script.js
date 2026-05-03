@@ -159,33 +159,22 @@ const renderListings = (listings = activeListings) => {
 };
 
 const clearMapMarkers = () => {
-  mapMarkers.forEach((marker) => marker.setMap(null));
+  mapMarkers.forEach((marker) => mapInstance.removeLayer(marker));
   mapMarkers = [];
 };
 
 const addMapMarker = (item, title, iconColor) => {
   if (!mapInstance || !item.latitude || !item.longitude) return;
-  const marker = new google.maps.Marker({
-    position: { lat: Number(item.latitude), lng: Number(item.longitude) },
-    map: mapInstance,
-    title,
-    icon: {
-      path: google.maps.SymbolPath.CIRCLE,
-      scale: 8,
-      fillColor: iconColor,
-      fillOpacity: 1,
-      strokeColor: '#ffffff',
-      strokeWeight: 2,
-    },
-  });
 
-  const infoWindow = new google.maps.InfoWindow({
-    content: `<strong>${title}</strong><br>${item.location || item.city || ''}`,
-  });
+  const marker = L.circleMarker([Number(item.latitude), Number(item.longitude)], {
+    color: '#ffffff',
+    weight: 2,
+    fillColor: iconColor,
+    fillOpacity: 1,
+    radius: 8
+  }).addTo(mapInstance);
 
-  marker.addListener('click', () => {
-    infoWindow.open(mapInstance, marker);
-  });
+  marker.bindPopup(`<strong>${title}</strong><br>${item.location || item.city || ''}`);
   mapMarkers.push(marker);
 };
 
@@ -193,50 +182,39 @@ const renderMapMarkers = () => {
   if (!mapInstance) return;
 
   clearMapMarkers();
-  const bounds = new google.maps.LatLngBounds();
 
   activeListings.forEach((listing) => {
     if (listing.latitude && listing.longitude) {
       addMapMarker(listing, `${listing.business} (Business)`, '#047857');
-      bounds.extend({ lat: Number(listing.latitude), lng: Number(listing.longitude) });
     }
   });
 
   mockNGOs.forEach((ngo) => {
     if (ngo.latitude && ngo.longitude) {
       addMapMarker(ngo, `${ngo.name} (NGO)`, '#f59e0b');
-      bounds.extend({ lat: Number(ngo.latitude), lng: Number(ngo.longitude) });
     }
   });
 
-  if (!bounds.isEmpty()) {
-    mapInstance.fitBounds(bounds, 80);
+  // Fit bounds to show all markers
+  if (mapMarkers.length > 0) {
+    const group = new L.featureGroup(mapMarkers);
+    mapInstance.fitBounds(group.getBounds().pad(0.1));
   }
 };
 
-const loadGoogleMaps = () => {
-  const key = import.meta.env.VITE_GOOGLE_MAPS_KEY;
-  if (!key) {
-    console.warn('Google Maps API key is missing. Set VITE_GOOGLE_MAPS_KEY in .env.');
-    return;
-  }
+const loadLeafletMap = () => {
+  const mapElement = document.getElementById('location-map');
+  if (!mapElement) return;
 
-  window.initFoodBridgeMap = () => {
-    const mapElement = document.getElementById('location-map');
-    if (!mapElement) return;
-    mapInstance = new google.maps.Map(mapElement, {
-      center: { lat: 20.5937, lng: 78.9629 },
-      zoom: 5,
-      disableDefaultUI: false,
-    });
-    renderMapMarkers();
-  };
+  // Initialize Leaflet map
+  mapInstance = L.map('location-map').setView([20.5937, 78.9629], 5);
 
-  const script = document.createElement('script');
-  script.src = `https://maps.googleapis.com/maps/api/js?key=${key}&callback=initFoodBridgeMap`;
-  script.async = true;
-  script.defer = true;
-  document.head.appendChild(script);
+  // Add OpenStreetMap tiles
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+  }).addTo(mapInstance);
+
+  renderMapMarkers();
 };
 
 const filterListings = () => {
@@ -381,7 +359,7 @@ const initialize = async () => {
   renderImpactStats();
   renderFAQ();
   renderActivityFeed();
-  loadGoogleMaps();
+  loadLeafletMap();
 
   setFilter('all');
   setCurrentYear();
