@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>The Food Bridge - Connect Surplus Food with Communities</title>
+  <link rel="stylesheet" href="styles.css" />
+  <link rel="stylesheet" href="src/utilities.css" />
+  <link rel="stylesheet" href="src/components.css" />
+</head>
+<body>
+  <header class="site-header">
+    <div class="container header-inner">
+      <a class="brand" href="#hero">🌉 The Food Bridge</a>
+      <button id="theme-toggle" class="theme-toggle" aria-label="Toggle dark mode">🌙</button>
+      <button class="menu-toggle" aria-label="Toggle navigation">
+        <span></span>
+        <span></span>
+        <span></span>
+      </button>
+      <nav class="nav-links">
+        <a href="#hero">Home</a>
+        <a href="#live-listings">Listings</a>
+        <a href="#impact">Impact</a>
+        <a href="#faq">FAQ</a>
+        <a href="#connect">Join</a>
+      </nav>
+    </div>
+  </header>
+
+  <main>
+    <section id="hero" class="hero section">
+      <div class="container hero-grid">
+        <div>
+          <p class="eyebrow">🍽️ Connecting surplus food to urgent need</p>
+          <h1>The Food Bridge</h1>
+          <p class="intro">
+            Commercial kitchens generate tons of surplus food daily. The Food Bridge is a fast, reliable platform that links restaurants,
+            hotels, caterers and cloud kitchens with NGOs, orphanages, old age homes, and food banks.
+          </p>
+          <div class="hero-actions">
+            <a class="btn primary" href="#live-listings">Browse Listings</a>
+            <a class="btn secondary" href="#connect">Get Started</a>
+          </div>
+          <div class="hero-stats">
+            <article class="stat-card reveal">
+              <strong class="counter" data-target="68">0</strong>
+              <p>Million kg redirected</p>
+            </article>
+            <article class="stat-card reveal">
+              <strong class="counter" data-target="200">0</strong>
+              <p>Million people reached</p>
+            </article>
+            <article class="stat-card reveal">
+              <strong class="counter" data-target="1200">0</strong>
+              <p>Food partners</p>
+            </article>
+          </div>
+        </div>
+        <div class="hero-card reveal">
+          <h2>🎯 Impact</h2>
+          <p>68 million tonnes wasted each year in India, while 200 million remain food insecure.</p>
+          <ul>
+            <li>✅ Surplus from commercial kitchens rescued</li>
+            <li>✅ Food redistributed before spoilage</li>
+            <li>✅ Verified partners for pickup and delivery</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <section id="live-listings" class="section">
+      <div class="container">
+        <div class="section-header reveal">
+          <p class="eyebrow">📋 Available Now</p>
+          <h2>Live Food Listings</h2>
+          <p>Fresh surplus food available for pickup from verified businesses</p>
+        </div>
+        <div class="listings-toolbar reveal">
+          <div class="search-box">
+            <input id="listing-search" type="search" placeholder="Search by kitchen, food or city" />
+          </div>
+          <div class="listings-summary">
+            <strong id="listings-count">0</strong> active offers
+          </div>
+        </div>
+        <div id="listings-container" class="cards-grid reveal">
+          <!-- Populated by JavaScript -->
+        </div>
+        <div class="text-center my-4">
+          <button class="btn secondary" id="load-more-listings">Load More Listings</button>
+        </div>
+      </div>
+    </section>
+
+    <section id="impact" class="section alt-section">
+      <div class="container">
+        <div class="section-header reveal">
+          <p class="eyebrow">📊 Our Impact</p>
+          <h2>Real Numbers, Real Change</h2>
+        </div>
+        <div id="impact-stats" class="stats-container reveal">
+          <!-- Populated by JavaScript -->
+        </div>
+      </div>
+    </section>
+
+    <section id="activity" class="section">
+      <div class="container">
+        <div class="section-header reveal">
+          <p class="eyebrow">🚀 Live Feed</p>
+          <h2>Donation Activity Stream</h2>
+          <p>Watch live updates as surplus food is claimed and delivered across communities.</p>
+        </div>
+        <div id="activity-feed" class="activity-feed reveal">
+          <!-- Activity populated by JavaScript -->
+        </div>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="container">
+        <div class="section-header reveal">
+          <p class="eyebrow">⚙️ How it works</p>
+          <h2>From surplus to support in 3 steps</h2>
+        </div>
+        <div class="steps-grid">
+          <div class="step reveal">
+            <span class="step-number">1</span>
+            <h3>📝 Create Listing</h3>
+            <p>Restaurants submit surplus food details and pickup window in minutes.</p>
+          </div>
+          <div class="step reveal">
+            <span class="step-number">2</span>
+            <h3>🔔 Instant Matching</h3>
+            <p>Verified NGOs receive alerts and claim food that matches their need.</p>
+          </div>
+          <div class="step reveal">
+            <span class="step-number">3</span>
+            <h3>🚚 Fast Delivery</h3>
+            <p>Coordinated pickup ensures food reaches people before it spoils.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="partners" class="section">
+      <div class="container">
+        <div class="section-header reveal">
+          <p class="eyebrow">🤝 Partners</p>
+          <h2>Designed for the entire food ecosystem</h2>
+        </div>
+        <div class="filter-group reveal">
+          <button class="filter-btn active" data-filter="all">All</button>
+          <button class="filter-btn" data-filter="business">Businesses</button>
+          <button class="filter-btn" data-filter="ngo">NGOs</button>
+          <button class="filter-btn" data-filter="logistics">Logistics</button>
+        </div>
+        <div class="partners-grid reveal">
+          <article class="partner-card" data-type="business">
+            <h3>🍽️ Restaurants & Cloud Kitchens</h3>
+            <p>Report surplus food instantly and schedule pickup before it loses value.</p>
+          </article>
+          <article class="partner-card" data-type="ngo">
+            <h3>🤲 NGOs & Food Banks</h3>
+            <p>Receive timely alerts for donations and plan distribution with confidence.</p>
+          </article>
+          <article class="partner-card" data-type="logistics">
+            <h3>🚚 Pickup & Delivery Teams</h3>
+            <p>Coordinate last-mile transportation and ensure fresh delivery.</p>
+          </article>
+          <article class="partner-card" data-type="business">
+            <h3>🎂 Hotels & Event Caterers</h3>
+            <p>Turn surplus event meals into community impact through structured handoffs.</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section class="section alt-section">
+      <div class="container">
+        <div class="section-header reveal">
+          <p class="eyebrow">💬 Stories</p>
+          <h2>What our partners are saying</h2>
+        </div>
+        <div class="testimonial-widget reveal">
+          <div class="testimonial-slides">
+            <article class="testimonial-slide active">
+              <p>"The Food Bridge helped our restaurant avoid waste and support three orphanages every week. It's been transformative."</p>
+              <p class="testimonial-author">— Asha Kumar, Restaurant Owner, Delhi</p>
+            </article>
+            <article class="testimonial-slide">
+              <p>"The platform makes it effortless for our NGO to claim fresh meals and plan distribution reliably. Highly efficient."</p>
+              <p class="testimonial-author">— Sanjay Patel, NGO Coordinator, Mumbai</p>
+            </article>
+            <article class="testimonial-slide">
+              <p>"The dashboard helps us respond instantly, reducing spoilage and improving delivery accuracy across the city."</p>
+              <p class="testimonial-author">— Meera Singh, Logistics Partner, Bangalore</p>
+            </article>
+          </div>
+          <div class="testimonial-controls">
+            <button id="prev-testimonial" class="btn secondary">← Previous</button>
+            <button id="next-testimonial" class="btn primary">Next →</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="faq" class="section">
+      <div class="container">
+        <div class="section-header reveal">
+          <p class="eyebrow">❓ FAQ</p>
+          <h2>Frequently Asked Questions</h2>
+        </div>
+        <div id="faq-container" class="faq-list reveal">
+          <!-- Populated by JavaScript -->
+        </div>
+      </div>
+    </section>
+
+    <section id="connect" class="section cta-section">
+      <div class="container connect-grid">
+        <div class="cta-card reveal">
+          <p class="eyebrow">🌟 Join the bridge</p>
+          <h2>Ready to reduce waste and feed communities?</h2>
+          <p>Whether you are a business with surplus food or a nonprofit seeking donations, The Food Bridge makes it simple.</p>
+          <div class="cta-actions">
+            <button class="btn primary" id="btn-business">I am a business</button>
+            <button class="btn secondary" id="btn-ngo">I am an NGO</button>
+          </div>
+        </div>
+
+        <form id="contact-form" class="contact-form reveal" style="display: none;">
+          <h3>Request a demo or partnership</h3>
+          <div class="form-field">
+            <label for="name">Name *</label>
+            <input id="name" name="name" type="text" placeholder="Your name" required />
+          </div>
+          <div class="form-field">
+            <label for="email">Email *</label>
+            <input id="email" name="email" type="email" placeholder="you@example.com" required />
+          </div>
+          <div class="form-field">
+            <label for="phone">Phone *</label>
+            <input id="phone" name="phone" type="tel" placeholder="+91 XXXXXXXXXX" required />
+          </div>
+          <div class="form-field">
+            <label for="role">I am a *</label>
+            <select id="role" name="role" required>
+              <option value="">Select your role</option>
+              <option value="business">Business / Kitchen</option>
+              <option value="ngo">NGO / Shelter</option>
+              <option value="logistics">Logistics Partner</option>
+            </select>
+          </div>
+          <div class="form-field">
+            <label for="message">Message *</label>
+            <textarea id="message" name="message" rows="5" placeholder="Tell us how The Food Bridge can help" required></textarea>
+          </div>
+          <button class="btn primary" type="submit">Send request</button>
+          <div id="form-status" class="form-status" aria-live="polite"></div>
+        </form>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="container footer-inner reveal">
+      <div>
+        <p>© <span id="current-year"></span> The Food Bridge.</p>
+        <p>Built to connect surplus food with communities in need.</p>
+      </div>
+      <div class="footer-links">
+        <a href="#">Privacy</a>
+        <a href="#">Terms</a>
+        <a href="#">Contact</a>
+      </div>
+    </div>
+  </footer>
+
+  <script type="module" src="script.js"></script>
+</body>
+</html>
