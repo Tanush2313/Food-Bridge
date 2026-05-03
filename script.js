@@ -1,4 +1,4 @@
-import { mockListings, mockFAQ, mockImpactStats, fetchListings, submitDonation } from './src/api.js';
+import { mockFAQ, mockNGOs, mockImpactStats, fetchListings, submitDonation } from './src/api.js';
 import { showModal, createNotification } from './src/ui.js';
 
 const navToggle = document.querySelector('.menu-toggle');
@@ -27,8 +27,10 @@ const loadMoreBtn = document.querySelector('#load-more-listings');
 
 let activeSlide = 0;
 let countersStarted = false;
-let activeListings = [...mockListings];
+let activeListings = [];
 let testimonialInterval = null;
+let mapInstance = null;
+let mapMarkers = [];
 
 const toggleNavigation = () => {
   navMenu?.classList.toggle('active');
@@ -156,15 +158,96 @@ const renderListings = (listings = activeListings) => {
   `).join('');
 };
 
+const clearMapMarkers = () => {
+  mapMarkers.forEach((marker) => marker.setMap(null));
+  mapMarkers = [];
+};
+
+const addMapMarker = (item, title, iconColor) => {
+  if (!mapInstance || !item.latitude || !item.longitude) return;
+  const marker = new google.maps.Marker({
+    position: { lat: Number(item.latitude), lng: Number(item.longitude) },
+    map: mapInstance,
+    title,
+    icon: {
+      path: google.maps.SymbolPath.CIRCLE,
+      scale: 8,
+      fillColor: iconColor,
+      fillOpacity: 1,
+      strokeColor: '#ffffff',
+      strokeWeight: 2,
+    },
+  });
+
+  const infoWindow = new google.maps.InfoWindow({
+    content: `<strong>${title}</strong><br>${item.location || item.city || ''}`,
+  });
+
+  marker.addListener('click', () => {
+    infoWindow.open(mapInstance, marker);
+  });
+  mapMarkers.push(marker);
+};
+
+const renderMapMarkers = () => {
+  if (!mapInstance) return;
+
+  clearMapMarkers();
+  const bounds = new google.maps.LatLngBounds();
+
+  activeListings.forEach((listing) => {
+    if (listing.latitude && listing.longitude) {
+      addMapMarker(listing, `${listing.business} (Business)`, '#047857');
+      bounds.extend({ lat: Number(listing.latitude), lng: Number(listing.longitude) });
+    }
+  });
+
+  mockNGOs.forEach((ngo) => {
+    if (ngo.latitude && ngo.longitude) {
+      addMapMarker(ngo, `${ngo.name} (NGO)`, '#f59e0b');
+      bounds.extend({ lat: Number(ngo.latitude), lng: Number(ngo.longitude) });
+    }
+  });
+
+  if (!bounds.isEmpty()) {
+    mapInstance.fitBounds(bounds, 80);
+  }
+};
+
+const loadGoogleMaps = () => {
+  const key = import.meta.env.VITE_GOOGLE_MAPS_KEY;
+  if (!key) {
+    console.warn('Google Maps API key is missing. Set VITE_GOOGLE_MAPS_KEY in .env.');
+    return;
+  }
+
+  window.initFoodBridgeMap = () => {
+    const mapElement = document.getElementById('location-map');
+    if (!mapElement) return;
+    mapInstance = new google.maps.Map(mapElement, {
+      center: { lat: 20.5937, lng: 78.9629 },
+      zoom: 5,
+      disableDefaultUI: false,
+    });
+    renderMapMarkers();
+  };
+
+  const script = document.createElement('script');
+  script.src = `https://maps.googleapis.com/maps/api/js?key=${key}&callback=initFoodBridgeMap`;
+  script.async = true;
+  script.defer = true;
+  document.head.appendChild(script);
+};
+
 const filterListings = () => {
   if (!listingSearch) return;
   const query = listingSearch.value.trim().toLowerCase();
-  activeListings = mockListings.filter((listing) => {
+  const filtered = activeListings.filter((listing) => {
     return [listing.business, listing.location, listing.food].some((value) =>
       value.toLowerCase().includes(query)
     );
   });
-  renderListings(activeListings);
+  renderListings(filtered);
 };
 
 const renderActivityFeed = () => {
@@ -240,14 +323,16 @@ const renderFAQ = () => {
 };
 
 window.handleClaimFood = async (listingId) => {
-  const result = await submitDonation({ listingId, timestamp: new Date().toISOString() });
+  const result = await submitDonation({ listingId });
   if (result.success) {
-    const listing = mockListings.find((item) => item.id === Number(listingId));
+    const listing = activeListings.find((item) => item.id === listingId || item.id === Number(listingId));
     if (listing) {
       listing.available = false;
       createNotification('Food claimed successfully! ✅', 'success');
       filterListings();
     }
+  } else {
+    createNotification('Unable to claim food. Please try again.', 'error');
   }
 };
 
@@ -263,7 +348,18 @@ const showContactForm = (role) => {
   if (form) form.scrollIntoView({ behavior: 'smooth', block: 'center' });
 };
 
-const initialize = () => {
+const loadListings = async () => {
+  try {
+    activeListings = await fetchListings();
+  } catch (error) {
+    console.error('Failed to load listing data from API:', error);
+    activeListings = [];
+  }
+  renderListings(activeListings);
+  renderMapMarkers();
+};
+
+const initialize = async () => {
   navToggle?.addEventListener('click', toggleNavigation);
   navLinks.forEach((link) => link.addEventListener('click', smoothScroll));
   filterButtons.forEach((button) => {
@@ -281,10 +377,11 @@ const initialize = () => {
   themeToggle?.addEventListener('click', toggleTheme);
 
   initializeTheme();
-  renderListings();
+  await loadListings();
   renderImpactStats();
   renderFAQ();
   renderActivityFeed();
+  loadGoogleMaps();
 
   setFilter('all');
   setCurrentYear();

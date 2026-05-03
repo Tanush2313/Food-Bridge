@@ -1,41 +1,7 @@
-// Mock data utilities for development
-export const mockListings = [
-  {
-    id: 1,
-    business: 'Sunrise Restaurant',
-    location: 'Delhi',
-    food: 'Biryani, Dal Makhani',
-    quantity: '50 portions',
-    time: '7:30 PM',
-    pickupWindow: '1 hour',
-    available: true
-  },
-  {
-    id: 2,
-    business: 'Grand Hotel',
-    location: 'Mumbai',
-    food: 'Paneer Tikka, Naan',
-    quantity: '100 portions',
-    time: '8:00 PM',
-    pickupWindow: '2 hours',
-    available: true
-  },
-  {
-    id: 3,
-    business: 'Cloud Kitchen Pro',
-    location: 'Bangalore',
-    food: 'Mixed Veg Curry, Rice',
-    quantity: '75 portions',
-    time: '6:30 PM',
-    pickupWindow: '90 minutes',
-    available: false
-  }
-];
-
 export const mockNGOs = [
-  { id: 1, name: 'Hope Foundation', city: 'Delhi', people: 500, verified: true },
-  { id: 2, name: 'Seva Samiti', city: 'Mumbai', people: 300, verified: true },
-  { id: 3, name: 'Rising Stars', city: 'Bangalore', people: 200, verified: true }
+  { id: 1, name: 'Hope Foundation', city: 'Delhi', people: 500, verified: true, latitude: 28.6139, longitude: 77.2090 },
+  { id: 2, name: 'Seva Samiti', city: 'Mumbai', people: 300, verified: true, latitude: 19.0760, longitude: 72.8777 },
+  { id: 3, name: 'Rising Stars', city: 'Bangalore', people: 200, verified: true, latitude: 12.9716, longitude: 77.5946 }
 ];
 
 export const mockFAQ = [
@@ -61,6 +27,8 @@ export const mockFAQ = [
   }
 ];
 
+const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:5000/api';
+
 export const mockImpactStats = [
   { label: 'Food Redirected', value: '1.2M', unit: 'kg', icon: '🍽️' },
   { label: 'People Fed', value: '25K+', unit: '', icon: '👥' },
@@ -69,9 +37,11 @@ export const mockImpactStats = [
 ];
 
 export const fetchListings = async () => {
-  return new Promise((resolve) => {
-    setTimeout(() => resolve(mockListings), 300);
-  });
+  const response = await fetch(`${API_BASE}/fooditems`);
+  if (!response.ok) {
+    throw new Error('Failed to load listings');
+  }
+  return await response.json();
 };
 
 export const fetchNGOs = async () => {
@@ -81,8 +51,18 @@ export const fetchNGOs = async () => {
 };
 
 export const submitDonation = async (data) => {
-  console.log('Donation submitted:', data);
-  return new Promise((resolve) => {
-    setTimeout(() => resolve({ success: true, id: Math.random() }), 500);
-  });
+  try {
+    const response = await fetch(`${API_BASE}/fooditems/${data.listingId}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ available: false }),
+    });
+    if (!response.ok) {
+      throw new Error('Failed to update listing');
+    }
+    return { success: true, listing: await response.json() };
+  } catch (err) {
+    console.warn('Donation submission failed:', err);
+    return { success: false, error: err.message };
+  }
 };
