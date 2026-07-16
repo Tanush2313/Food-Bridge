@@ -43,8 +43,27 @@ db.serialize(() => {
     )
   `);
 
+  db.run(`
+    CREATE TABLE IF NOT EXISTS ngos (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      name TEXT NOT NULL,
+      location TEXT NOT NULL DEFAULT '',
+      city TEXT NOT NULL DEFAULT '',
+      people INTEGER NOT NULL DEFAULT 0,
+      verified INTEGER NOT NULL DEFAULT 1,
+      latitude REAL NOT NULL DEFAULT 0,
+      longitude REAL NOT NULL DEFAULT 0,
+      created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+    )
+  `);
+
   ensureColumn('food_items', 'latitude', 'latitude REAL NOT NULL DEFAULT 0');
   ensureColumn('food_items', 'longitude', 'longitude REAL NOT NULL DEFAULT 0');
+  ensureColumn('ngos', 'city', "city TEXT NOT NULL DEFAULT ''");
+  ensureColumn('ngos', 'people', 'people INTEGER NOT NULL DEFAULT 0');
+  ensureColumn('ngos', 'verified', 'verified INTEGER NOT NULL DEFAULT 1');
+  ensureColumn('ngos', 'latitude', 'latitude REAL NOT NULL DEFAULT 0');
+  ensureColumn('ngos', 'longitude', 'longitude REAL NOT NULL DEFAULT 0');
 
   db.get('SELECT COUNT(*) AS count FROM food_items', (err, row) => {
     if (err) {

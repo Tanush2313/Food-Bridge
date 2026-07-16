@@ -55,6 +55,7 @@ router.get('/:id', async (req, res) => {
 // Create food item
 router.post('/', async (req, res) => {
   try {
+    const timeValue = req.body.time || new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' });
     const result = await runAsync(
       `INSERT INTO food_items (business, location, food, quantity, time, pickupWindow, available, latitude, longitude)
        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
@@ -63,7 +64,7 @@ router.post('/', async (req, res) => {
         req.body.location,
         req.body.food,
         req.body.quantity,
-        req.body.time,
+        timeValue,
         req.body.pickupWindow,
         req.body.available !== undefined ? (req.body.available ? 1 : 0) : 1,
         req.body.latitude || 0,

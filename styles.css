@@ -252,6 +252,125 @@ body.dark-mode .theme-toggle {
   overflow: hidden;
   background: #f8fafc;
 }
+.dashboard-grid {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  margin-top: 1rem;
+}
+.dashboard-actions {
+  display: grid;
+  gap: 1.5rem;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  margin-top: 2rem;
+}
+.dashboard-entry-grid {
+  display: grid;
+  gap: 1.5rem;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  margin-top: 1.5rem;
+}
+.dashboard-action-card,
+.dashboard-entry-card {
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 1rem;
+  padding: 1.5rem;
+  box-shadow: 0 20px 40px rgba(15, 23, 42, 0.06);
+}
+.dashboard-action-card h3,
+.dashboard-entry-card h3 {
+  margin-top: 0;
+  margin-bottom: 0.25rem;
+  color: #0f172a;
+}
+.dashboard-entry-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+.dashboard-entry-header span {
+  color: #64748b;
+  font-size: 0.9rem;
+}
+.dashboard-entry-list {
+  display: grid;
+  gap: 0.75rem;
+}
+.dashboard-entry-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.9rem 1rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 0.9rem;
+  background: #f8fafc;
+}
+.dashboard-entry-item strong {
+  display: block;
+  margin-bottom: 0.2rem;
+  color: #0f172a;
+}
+.dashboard-entry-item p {
+  margin: 0;
+  color: #64748b;
+  font-size: 0.9rem;
+}
+.dashboard-form {
+  display: grid;
+  gap: 1rem;
+}
+.dashboard-form label {
+  display: grid;
+  gap: 0.5rem;
+  font-size: 0.9rem;
+  color: #334155;
+}
+.dashboard-form input {
+  width: 100%;
+  padding: 0.9rem 1rem;
+  border-radius: 0.85rem;
+  border: 1px solid #d1d5db;
+  background: white;
+}
+.dashboard-form button {
+  width: fit-content;
+  justify-self: start;
+  padding: 0.95rem 1.5rem;
+}
+@media (max-width: 900px) {
+  .dashboard-actions,
+  .dashboard-entry-grid {
+    grid-template-columns: 1fr;
+  }
+}
+.dashboard-card {
+  background: linear-gradient(135deg, #ecfdf5 0%, #f8fafc 100%);
+  border: 1px solid #d1fae5;
+  border-radius: 1rem;
+  padding: 1.25rem;
+  box-shadow: 0 10px 30px rgba(15, 23, 42, 0.06);
+}
+.dashboard-label {
+  margin: 0 0 0.5rem;
+  color: #047857;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  font-size: 0.78rem;
+}
+.dashboard-card h3 {
+  margin: 0;
+  font-size: 1.6rem;
+  color: #0f172a;
+}
+.dashboard-card span {
+  color: #475569;
+  font-size: 0.95rem;
+}
 .map-card {
   padding: 0;
 }

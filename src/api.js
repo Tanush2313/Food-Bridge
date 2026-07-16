@@ -27,7 +27,7 @@ export const mockFAQ = [
   }
 ];
 
-const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:5000/api';
+const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:5001/api';
 
 export const mockImpactStats = [
   { label: 'Food Redirected', value: '1.2M', unit: 'kg', icon: '🍽️' },
@@ -45,9 +45,15 @@ export const fetchListings = async () => {
 };
 
 export const fetchNGOs = async () => {
-  return new Promise((resolve) => {
-    setTimeout(() => resolve(mockNGOs), 300);
-  });
+  try {
+    const response = await fetch(`${API_BASE}/ngos`);
+    if (!response.ok) throw new Error('Failed to load NGOs');
+    const data = await response.json();
+    return Array.isArray(data) ? data : mockNGOs;
+  } catch (err) {
+    console.warn('fetchNGOs failed, falling back to mockNGOs', err);
+    return mockNGOs;
+  }
 };
 
 export const submitDonation = async (data) => {
@@ -64,5 +70,35 @@ export const submitDonation = async (data) => {
   } catch (err) {
     console.warn('Donation submission failed:', err);
     return { success: false, error: err.message };
+  }
+};
+
+export const createNgo = async (data) => {
+  try {
+    const response = await fetch(`${API_BASE}/ngos`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    });
+    if (!response.ok) throw new Error('Failed to create NGO');
+    return await response.json();
+  } catch (err) {
+    console.warn('createNgo failed:', err);
+    throw err;
+  }
+};
+
+export const createListing = async (data) => {
+  try {
+    const response = await fetch(`${API_BASE}/fooditems`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    });
+    if (!response.ok) throw new Error('Failed to create listing');
+    return await response.json();
+  } catch (err) {
+    console.warn('createListing failed:', err);
+    throw err;
   }
 };

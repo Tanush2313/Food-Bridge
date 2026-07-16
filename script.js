@@ -1,6 +1,7 @@
-import { mockFAQ, mockNGOs, mockImpactStats, fetchListings, submitDonation } from './src/api.js';
+import { mockFAQ, mockNGOs, mockImpactStats, fetchListings, fetchNGOs, submitDonation, createNgo, createListing } from './src/api.js';
 import { showModal, createNotification } from './src/ui.js';
 
+// DOM refs
 const navToggle = document.querySelector('.menu-toggle');
 const navMenu = document.querySelector('.nav-links');
 const navLinks = document.querySelectorAll('.nav-links a');
@@ -16,53 +17,51 @@ const formStatus = document.querySelector('#form-status');
 const yearElement = document.querySelector('#current-year');
 const btnBusiness = document.querySelector('#btn-business');
 const btnNgo = document.querySelector('#btn-ngo');
+const dashboardNgoForm = document.querySelector('#dashboard-ngo-form');
+const dashboardListingForm = document.querySelector('#dashboard-listing-form');
 const listingsContainer = document.querySelector('#listings-container');
 const listingSearch = document.querySelector('#listing-search');
 const listingsCount = document.querySelector('#listings-count');
 const impactStatsContainer = document.querySelector('#impact-stats');
+const dashboardStatsContainer = document.querySelector('#dashboard-stats');
+const dashboardNgoList = document.querySelector('#dashboard-ngos-list');
+const dashboardListingsList = document.querySelector('#dashboard-listings-list');
 const faqContainer = document.querySelector('#faq-container');
 const activityFeed = document.querySelector('#activity-feed');
 const themeToggle = document.querySelector('#theme-toggle');
 const loadMoreBtn = document.querySelector('#load-more-listings');
 
+// State
 let activeSlide = 0;
 let countersStarted = false;
 let activeListings = [];
+let ngoLocations = [];
 let testimonialInterval = null;
 let mapInstance = null;
 let mapMarkers = [];
 
-const toggleNavigation = () => {
-  navMenu?.classList.toggle('active');
-};
-
-const closeNavigation = () => {
-  navMenu?.classList.remove('active');
-};
+// Helpers
+const toggleNavigation = () => navMenu?.classList.toggle('active');
+const closeNavigation = () => navMenu?.classList.remove('active');
 
 const smoothScroll = (event) => {
   event.preventDefault();
   const targetId = event.currentTarget.getAttribute('href')?.slice(1);
   const target = targetId ? document.getElementById(targetId) : null;
-  if (target) {
-    closeNavigation();
-    target.scrollIntoView({ behavior: 'smooth', block: 'start' });
-  }
+  if (target) target.scrollIntoView({ behavior: 'smooth', block: 'start' });
 };
 
 const animateCounter = (counter) => {
   const target = Number(counter.dataset.target) || 0;
-  const duration = 1800;
-  const stepTime = Math.max(duration / target, 20);
+  const duration = 1400;
+  const step = Math.max(Math.floor(duration / Math.max(target, 1)), 20);
   let current = 0;
-  const increment = () => {
+  const tick = () => {
     current += 1;
     counter.textContent = current.toString();
-    if (current < target) {
-      window.setTimeout(increment, stepTime);
-    }
+    if (current < target) setTimeout(tick, step);
   };
-  increment();
+  tick();
 };
 
 const startCounters = () => {
@@ -72,12 +71,10 @@ const startCounters = () => {
 };
 
 const revealOnScroll = () => {
-  const windowHeight = window.innerHeight;
-  revealItems.forEach((item) => {
-    const rect = item.getBoundingClientRect();
-    if (rect.top < windowHeight - 100) {
-      item.classList.add('visible');
-    }
+  const h = window.innerHeight;
+  revealItems.forEach((el) => {
+    const rect = el.getBoundingClientRect();
+    if (rect.top < h - 100) el.classList.add('visible');
   });
 };
 
@@ -88,17 +85,8 @@ const setFilter = (filter) => {
   });
 };
 
-const updateFilterButtons = (selectedButton) => {
-  filterButtons.forEach((button) => {
-    button.classList.toggle('active', button === selectedButton);
-  });
-};
-
-const showSlide = (index) => {
-  activeSlide = (index + testimonialSlides.length) % testimonialSlides.length;
-  testimonialSlides.forEach((slide, slideIndex) => {
-    slide.classList.toggle('active', slideIndex === activeSlide);
-  });
+const updateFilterButtons = (selected) => {
+  filterButtons.forEach((btn) => btn.classList.toggle('active', btn === selected));
 };
 
 const displayFormStatus = (message, isSuccess = true) => {
@@ -109,279 +97,251 @@ const displayFormStatus = (message, isSuccess = true) => {
   formStatus.classList.toggle('error', !isSuccess);
 };
 
-const handleFormSubmit = (event) => {
-  event.preventDefault();
+const handleFormSubmit = (e) => {
+  e.preventDefault();
   if (!form) return;
-  if (!form.checkValidity()) {
-    displayFormStatus('Please fill all required fields correctly.', false);
-    return;
-  }
-  displayFormStatus('Thank you! Your request has been sent successfully.');
-  setTimeout(() => {
-    form.style.display = 'none';
-    const ctaCard = document.querySelector('.cta-card');
-    if (ctaCard) ctaCard.style.display = 'block';
-    form.reset();
-  }, 1500);
+  if (!form.checkValidity()) return displayFormStatus('Please fill required fields', false);
+  displayFormStatus('Thanks — we will be in touch');
+  setTimeout(() => { form.reset(); form.style.display = 'none'; }, 800);
 };
 
-const setCurrentYear = () => {
-  if (yearElement) {
-    yearElement.textContent = new Date().getFullYear().toString();
+const resetDashboardForm = (formElement) => {
+  if (!formElement) return;
+  formElement.reset();
+};
+
+const handleCreateNgo = async (event) => {
+  event.preventDefault();
+  if (!dashboardNgoForm) return;
+  if (!dashboardNgoForm.checkValidity()) return createNotification('Fill all NGO fields', 'error');
+
+  const formData = new FormData(dashboardNgoForm);
+  const newNgo = {
+    name: formData.get('name')?.toString().trim(),
+    city: formData.get('city')?.toString().trim(),
+    people: Number(formData.get('people')) || 0,
+    verified: true,
+    latitude: Number(formData.get('latitude')),
+    longitude: Number(formData.get('longitude')),
+  };
+
+  try {
+    const created = await createNgo(newNgo);
+    ngoLocations.push(created);
+    renderDashboardStats();
+    renderDashboardEntries();
+    renderMapMarkers();
+    createNotification('NGO added successfully', 'success');
+    resetDashboardForm(dashboardNgoForm);
+  } catch (error) {
+    createNotification('Failed to add NGO', 'error');
   }
 };
 
-const updateListingCount = (listings) => {
-  if (!listingsCount) return;
-  listingsCount.textContent = listings.length.toString();
+const handleCreateListing = async (event) => {
+  event.preventDefault();
+  if (!dashboardListingForm) return;
+  if (!dashboardListingForm.checkValidity()) return createNotification('Fill all listing fields', 'error');
+
+  const formData = new FormData(dashboardListingForm);
+  const newListing = {
+    business: formData.get('business')?.toString().trim(),
+    location: formData.get('location')?.toString().trim(),
+    food: formData.get('food')?.toString().trim(),
+    quantity: formData.get('quantity')?.toString().trim(),
+    pickupWindow: formData.get('pickupWindow')?.toString().trim(),
+    available: true,
+    latitude: Number(formData.get('latitude')),
+    longitude: Number(formData.get('longitude')),
+  };
+
+  try {
+    const created = await createListing(newListing);
+    activeListings.unshift(created);
+    renderListings(activeListings);
+    renderDashboardStats();
+    renderDashboardEntries();
+    renderMapMarkers();
+    createNotification('Listing added successfully', 'success');
+    resetDashboardForm(dashboardListingForm);
+  } catch (error) {
+    createNotification('Failed to add listing', 'error');
+  }
 };
+
+const setCurrentYear = () => { if (yearElement) yearElement.textContent = new Date().getFullYear(); };
+
+const updateListingCount = (listings) => { if (listingsCount) listingsCount.textContent = String(listings.length); };
 
 const renderListings = (listings = activeListings) => {
   if (!listingsContainer) return;
   updateListingCount(listings);
-  listingsContainer.innerHTML = listings.map((listing) => `
+  listingsContainer.innerHTML = listings.map((l) => `
     <article class="card listing-card reveal">
       <div class="flex justify-between items-center">
-        <h3>${listing.business}</h3>
-        <span class="listing-badge ${listing.available ? 'available' : 'unavailable'}">
-          ${listing.available ? '✅ Available' : '⏸️ Unavailable'}
-        </span>
+        <h3>${l.business}</h3>
+        <span class="listing-badge ${l.available ? 'available' : 'unavailable'}">${l.available ? '✅ Available' : '⏸️ Unavailable'}</span>
       </div>
-      <p><strong>📍</strong> ${listing.location}</p>
-      <p class="my-2"><strong>🍽️ Food:</strong> ${listing.food}</p>
-      <p class="my-2"><strong>📦 Quantity:</strong> ${listing.quantity}</p>
-      <p class="my-2"><strong>⏱️ Pickup:</strong> ${listing.time} (${listing.pickupWindow} window)</p>
-      <button class="btn primary w-full mt-4" ${!listing.available ? 'disabled' : ''} onclick="window.handleClaimFood('${listing.id}')">
-        ${listing.available ? 'Claim Food' : 'Already Claimed'}
-      </button>
+      <p><strong>📍</strong> ${l.location}</p>
+      <p class="my-2"><strong>🍽️</strong> ${l.food}</p>
+      <p class="my-2"><strong>📦</strong> ${l.quantity}</p>
+      <p class="my-2"><strong>⏱️</strong> ${l.time} (${l.pickupWindow})</p>
+      <button class="btn primary w-full mt-4" ${!l.available ? 'disabled' : ''} onclick="window.handleClaimFood('${l.id}')">${l.available ? 'Claim Food' : 'Already Claimed'}</button>
     </article>
   `).join('');
 };
 
-const clearMapMarkers = () => {
-  mapMarkers.forEach((marker) => mapInstance.removeLayer(marker));
-  mapMarkers = [];
-};
+const clearMapMarkers = () => { mapMarkers.forEach(m => mapInstance.removeLayer(m)); mapMarkers = []; };
 
-const addMapMarker = (item, title, iconColor) => {
-  if (!mapInstance || !item.latitude || !item.longitude) return;
-
-  const marker = L.circleMarker([Number(item.latitude), Number(item.longitude)], {
-    color: '#ffffff',
-    weight: 2,
-    fillColor: iconColor,
-    fillOpacity: 1,
-    radius: 8
-  }).addTo(mapInstance);
-
-  marker.bindPopup(`<strong>${title}</strong><br>${item.location || item.city || ''}`);
+const addMapMarker = (item, title, color = '#047857', symbol = '') => {
+  if (!mapInstance) return;
+  const lat = Number(item.latitude);
+  const lon = Number(item.longitude);
+  if (!Number.isFinite(lat) || !Number.isFinite(lon)) return;
+  const marker = L.circleMarker([lat, lon], { color: '#fff', weight: 2, fillColor: color, fillOpacity: 1, radius: 8 }).addTo(mapInstance);
+  const locationText = item.location || item.city || '';
+  marker.bindPopup(`<strong>${title}</strong><br>${locationText}`);
   mapMarkers.push(marker);
 };
 
 const renderMapMarkers = () => {
   if (!mapInstance) return;
-
   clearMapMarkers();
-
-  activeListings.forEach((listing) => {
-    if (listing.latitude && listing.longitude) {
-      addMapMarker(listing, `${listing.business} (Business)`, '#047857');
-    }
-  });
-
-  mockNGOs.forEach((ngo) => {
-    if (ngo.latitude && ngo.longitude) {
-      addMapMarker(ngo, `${ngo.name} (NGO)`, '#f59e0b');
-    }
-  });
-
-  // Fit bounds to show all markers
-  if (mapMarkers.length > 0) {
-    const group = new L.featureGroup(mapMarkers);
-    mapInstance.fitBounds(group.getBounds().pad(0.1));
-  }
+  activeListings.forEach((l) => { if (l.latitude && l.longitude) addMapMarker(l, `${l.business} (Business)`, '#047857', '🏪'); });
+  ngoLocations.forEach((n) => { if (n.latitude && n.longitude) addMapMarker(n, `${n.name} (NGO)`, '#f59e0b', '🤝'); });
+  if (mapMarkers.length > 0) { const group = new L.featureGroup(mapMarkers); mapInstance.fitBounds(group.getBounds().pad(0.12)); }
 };
 
 const loadLeafletMap = () => {
-  const mapElement = document.getElementById('location-map');
-  if (!mapElement) return;
-
-  // Initialize Leaflet map
+  const el = document.getElementById('location-map');
+  if (!el) return;
   mapInstance = L.map('location-map').setView([20.5937, 78.9629], 5);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '© OpenStreetMap contributors' }).addTo(mapInstance);
+  setTimeout(() => { mapInstance.invalidateSize(); renderMapMarkers(); }, 150);
+};
 
-  // Add OpenStreetMap tiles
-  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-    attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-  }).addTo(mapInstance);
-
+// API loaders
+const loadListings = async () => {
+  try { activeListings = await fetchListings(); } catch (e) { console.warn(e); activeListings = []; }
+  renderListings(activeListings);
+  renderDashboardStats();
+  renderDashboardEntries();
   renderMapMarkers();
 };
 
-const filterListings = () => {
-  if (!listingSearch) return;
-  const query = listingSearch.value.trim().toLowerCase();
-  const filtered = activeListings.filter((listing) => {
-    return [listing.business, listing.location, listing.food].some((value) =>
-      value.toLowerCase().includes(query)
-    );
-  });
-  renderListings(filtered);
+const loadNgoLocations = async () => {
+  try { ngoLocations = await fetchNGOs(); } catch (e) { console.warn(e); ngoLocations = mockNGOs; }
+  renderDashboardEntries();
+  renderMapMarkers();
 };
 
-const renderActivityFeed = () => {
-  if (!activityFeed) return;
-  const events = [
-    { time: 'Just now', message: 'Sunrise Restaurant posted 50 portions of biryani for nearby NGOs.' },
-    { time: '5 mins ago', message: 'Hope Foundation claimed a fresh food pickup from Grand Hotel.' },
-    { time: '12 mins ago', message: 'Cloud Kitchen Pro updated availability after confirming safe delivery.' },
-    { time: '20 mins ago', message: 'Logistics partner set a new route for urgent distribution in Mumbai.' }
-  ];
-  activityFeed.innerHTML = events.map((event) => `
-    <article class="activity-card">
-      <time>${event.time}</time>
-      <p>${event.message}</p>
-    </article>
-  `).join('');
+// Dashboard
+const renderDashboardStats = () => {
+  if (!dashboardStatsContainer) return;
+  const available = activeListings.filter(l => l.available).length;
+  const total = activeListings.length;
+  const ngos = ngoLocations.length || mockNGOs.length;
+  const cities = [...new Set(activeListings.map(l => (l.location || '').toLowerCase()))].filter(Boolean).length;
+  dashboardStatsContainer.innerHTML = `
+    <article class="dashboard-card"><p class="dashboard-label">Active offers</p><h3>${available}/${total}</h3><span>Listings ready for pickup</span></article>
+    <article class="dashboard-card"><p class="dashboard-label">Verified NGOs</p><h3>${ngos}</h3><span>Partner organizations</span></article>
+    <article class="dashboard-card"><p class="dashboard-label">Cities covered</p><h3>${cities}</h3><span>Active locations</span></article>
+  `;
 };
 
-const toggleTheme = () => {
-  const isDark = document.body.classList.toggle('dark-mode');
-  if (themeToggle) {
-    themeToggle.textContent = isDark ? '☀️' : '🌙';
+const renderDashboardEntries = () => {
+  if (dashboardNgoList) {
+    const ngos = ngoLocations.length ? ngoLocations : mockNGOs;
+    dashboardNgoList.innerHTML = ngos.slice(0, 5).map((ngo) => `
+      <article class="dashboard-entry-item">
+        <div>
+          <strong>${ngo.name || 'Unnamed NGO'}</strong>
+          <p>${ngo.city || 'Unknown city'} • ${ngo.people || 0} people</p>
+        </div>
+        <span class="listing-badge ${ngo.verified ? 'available' : 'unavailable'}">${ngo.verified ? 'Verified' : 'Pending'}</span>
+      </article>
+    `).join('');
   }
-  localStorage.setItem('foodBridgeTheme', isDark ? 'dark' : 'light');
-};
 
-const initializeTheme = () => {
-  const savedTheme = localStorage.getItem('foodBridgeTheme');
-  if (savedTheme === 'dark') {
-    document.body.classList.add('dark-mode');
-    if (themeToggle) themeToggle.textContent = '☀️';
+  if (dashboardListingsList) {
+    const listings = activeListings.length ? activeListings : [];
+    dashboardListingsList.innerHTML = listings.slice(0, 5).map((listing) => `
+      <article class="dashboard-entry-item">
+        <div>
+          <strong>${listing.business || 'Unnamed business'}</strong>
+          <p>${listing.location || 'Unknown location'} • ${listing.food || 'Food available'}</p>
+        </div>
+        <span class="listing-badge ${listing.available ? 'available' : 'unavailable'}">${listing.available ? 'Open' : 'Claimed'}</span>
+      </article>
+    `).join('');
   }
 };
 
-const startAutoSlide = () => {
-  if (testimonialInterval) return;
-  testimonialInterval = window.setInterval(() => showSlide(activeSlide + 1), 8000);
-};
-
-const renderImpactStats = () => {
-  if (!impactStatsContainer) return;
-  impactStatsContainer.innerHTML = mockImpactStats.map((stat) => `
-    <article class="stat-box">
-      <div class="stat-box-value">${stat.value}</div>
-      <p class="stat-box-label"><strong>${stat.label}</strong></p>
-    </article>
-  `).join('');
-};
+const renderImpactStats = () => { if (!impactStatsContainer) return; impactStatsContainer.innerHTML = mockImpactStats.map(s => `<article class="stat-box"><div class="stat-box-value">${s.value}</div><p class="stat-box-label"><strong>${s.label}</strong></p></article>`).join(''); };
 
 const renderFAQ = () => {
   if (!faqContainer) return;
-  faqContainer.innerHTML = '<div class="faq-grid">' + mockFAQ.map((item, index) => `
-    <div class="faq-item">
-      <button class="faq-question" data-index="${index}">
-        <span>${item.question}</span>
-        <span class="faq-toggle">+</span>
-      </button>
-      <div class="faq-answer" style="display: none;">
-        <p>${item.answer}</p>
-      </div>
-    </div>
+  faqContainer.innerHTML = '<div class="faq-grid">' + mockFAQ.map((item, i) => `
+    <div class="faq-item"><button class="faq-question" data-index="${i}"><span>${item.question}</span><span class="faq-toggle">+</span></button><div class="faq-answer" style="display:none;"><p>${item.answer}</p></div></div>
   `).join('') + '</div>';
-
-  document.querySelectorAll('.faq-question').forEach((btn) => {
-    btn.addEventListener('click', () => {
-      const answer = btn.nextElementSibling;
-      const toggle = btn.querySelector('.faq-toggle');
-      const isOpen = answer.style.display !== 'none';
-      answer.style.display = isOpen ? 'none' : 'block';
-      toggle.textContent = isOpen ? '+' : '−';
-    });
-  });
+  document.querySelectorAll('.faq-question').forEach(btn => btn.addEventListener('click', () => { const ans = btn.nextElementSibling; const open = ans.style.display !== 'none'; ans.style.display = open ? 'none' : 'block'; btn.querySelector('.faq-toggle').textContent = open ? '+' : '−'; }));
 };
 
-window.handleClaimFood = async (listingId) => {
-  const result = await submitDonation({ listingId });
-  if (result.success) {
-    const listing = activeListings.find((item) => item.id === listingId || item.id === Number(listingId));
-    if (listing) {
-      listing.available = false;
-      createNotification('Food claimed successfully! ✅', 'success');
-      filterListings();
-    }
+window.handleClaimFood = async (id) => {
+  const res = await submitDonation({ listingId: id });
+  if (res.success) {
+    const item = activeListings.find(x => String(x.id) === String(id)); if (item) item.available = false;
+    createNotification('Food claimed', 'success');
+    renderListings(activeListings);
+    renderMapMarkers();
   } else {
-    createNotification('Unable to claim food. Please try again.', 'error');
+    createNotification('Claim failed', 'error');
   }
 };
 
-const showContactForm = (role) => {
-  const ctaCard = document.querySelector('.cta-card');
-  if (ctaCard) ctaCard.style.display = 'none';
-  if (form) form.style.display = 'block';
-  const roleSelect = form.querySelector('#role');
-  if (roleSelect) {
-    roleSelect.value = role;
-    roleSelect.disabled = true;
-  }
-  if (form) form.scrollIntoView({ behavior: 'smooth', block: 'center' });
-};
+const showContactForm = (role) => { if (form) { form.style.display = 'block'; const sel = form.querySelector('#role'); if (sel) { sel.value = role; sel.disabled = true; } form.scrollIntoView({behavior:'smooth'}); } };
 
-const loadListings = async () => {
-  try {
-    activeListings = await fetchListings();
-  } catch (error) {
-    console.error('Failed to load listing data from API:', error);
-    activeListings = [];
-  }
-  renderListings(activeListings);
-  renderMapMarkers();
-};
+const renderActivityFeed = () => { if (!activityFeed) return; activityFeed.innerHTML = [`Just now|Sunrise Restaurant posted 50 portions of biryani`,`5 mins ago|Hope Foundation claimed pickup from Grand Hotel`].map(e => { const [time,msg]=e.split('|'); return `<article class="activity-card"><time>${time}</time><p>${msg}</p></article>`}).join(''); };
+
+const toggleTheme = () => { const isDark = document.body.classList.toggle('dark-mode'); if (themeToggle) themeToggle.textContent = isDark ? '☀️' : '🌙'; localStorage.setItem('foodBridgeTheme', isDark ? 'dark' : 'light'); };
+
+const initializeTheme = () => { const t = localStorage.getItem('foodBridgeTheme'); if (t === 'dark') { document.body.classList.add('dark-mode'); if (themeToggle) themeToggle.textContent = '☀️'; } };
+
+const startAutoSlide = () => { if (testimonialInterval) return; testimonialInterval = setInterval(() => { activeSlide = (activeSlide+1) % testimonialSlides.length; testimonialSlides.forEach((s,i) => s.classList.toggle('active', i===activeSlide)); }, 8000); };
 
 const initialize = async () => {
   navToggle?.addEventListener('click', toggleNavigation);
-  navLinks.forEach((link) => link.addEventListener('click', smoothScroll));
-  filterButtons.forEach((button) => {
-    button.addEventListener('click', () => {
-      updateFilterButtons(button);
-      setFilter(button.dataset.filter || 'all');
-    });
-  });
-  prevButton?.addEventListener('click', () => showSlide(activeSlide - 1));
-  nextButton?.addEventListener('click', () => showSlide(activeSlide + 1));
+  navLinks.forEach(l => l.addEventListener('click', smoothScroll));
+  filterButtons.forEach(btn => btn.addEventListener('click', () => { updateFilterButtons(btn); setFilter(btn.dataset.filter || 'all'); }));
+  prevButton?.addEventListener('click', () => { activeSlide = (activeSlide-1+testimonialSlides.length)%testimonialSlides.length; testimonialSlides.forEach((s,i)=>s.classList.toggle('active', i===activeSlide)); });
+  nextButton?.addEventListener('click', () => { activeSlide = (activeSlide+1)%testimonialSlides.length; testimonialSlides.forEach((s,i)=>s.classList.toggle('active', i===activeSlide)); });
   form?.addEventListener('submit', handleFormSubmit);
   btnBusiness?.addEventListener('click', () => showContactForm('business'));
   btnNgo?.addEventListener('click', () => showContactForm('ngo'));
-  listingSearch?.addEventListener('input', filterListings);
+  dashboardNgoForm?.addEventListener('submit', handleCreateNgo);
+  dashboardListingForm?.addEventListener('submit', handleCreateListing);
+  listingSearch?.addEventListener('input', () => { const q = listingSearch.value.trim().toLowerCase(); const filtered = activeListings.filter(l => [l.business, l.location, l.food].some(v => (v||'').toLowerCase().includes(q))); renderListings(filtered); });
   themeToggle?.addEventListener('click', toggleTheme);
 
   initializeTheme();
   await loadListings();
+  await loadNgoLocations();
+  renderDashboardStats();
+  renderDashboardEntries();
   renderImpactStats();
   renderFAQ();
   renderActivityFeed();
   loadLeafletMap();
-
   setFilter('all');
   setCurrentYear();
-  showSlide(activeSlide);
+  revealItems.forEach((el) => el.classList.add('visible'));
   revealOnScroll();
+  window.addEventListener('scroll', revealOnScroll);
+  window.addEventListener('resize', revealOnScroll);
   startAutoSlide();
 
-  window.addEventListener('scroll', () => {
-    revealOnScroll();
-    const heroStats = document.querySelector('.hero-stats');
-    if (heroStats && heroStats.getBoundingClientRect().top < window.innerHeight - 100) {
-      startCounters();
-    }
-  });
-
-  loadMoreBtn?.addEventListener('click', () => {
-    createNotification('Loading more listings...', 'info');
-    setTimeout(() => {
-      renderListings();
-      createNotification('✅ More listings loaded!', 'success');
-    }, 800);
-  });
+  // Periodic refresh so new entries appear in near real-time
+  setInterval(() => { loadListings(); loadNgoLocations(); }, 10000);
 };
 
 initialize();
